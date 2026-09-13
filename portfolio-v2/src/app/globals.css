@@ -1,0 +1,281 @@
+@import 'tailwindcss';
+
+/* ============================================================
+   ENCRE — système de design
+   Une surface, pas un écran. Le contenu se diffuse, il n'apparaît pas.
+   ============================================================ */
+
+@theme {
+  /* ── Matière ─────────────────────────────────────────── */
+  --color-void: #0a0a0b;
+  --color-void-2: #101013;
+  --color-void-3: #17171a;
+
+  /* Jamais de blanc pur : le papier est toujours légèrement chaud */
+  --color-paper: #e8e4dc;
+  --color-paper-2: #b7b3ab;
+  /* 4,9:1 sur --color-void : le seuil AA pour du texte de 10 px */
+  --color-ash: #827e75;
+  --color-ash-2: #3a3833;
+
+  /* L'accent unique. `lit` pour le texte (contraste AA), plein pour les aplats */
+  --color-vermillon: #c8321e;
+  --color-vermillon-lit: #e04a32;
+
+  /* ── Typographie ─────────────────────────────────────── */
+  --font-display: var(--font-instrument), 'Times New Roman', serif;
+  --font-mono: var(--font-jetbrains), ui-monospace, 'SF Mono', monospace;
+
+  /* ── Rythme ──────────────────────────────────────────── */
+  --ease-ink: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-seal: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* ============================================================
+   Base
+   ============================================================ */
+
+:root {
+  color-scheme: dark;
+  --bleed: 0%;
+}
+
+* {
+  min-width: 0;
+}
+
+html {
+  background: var(--color-void);
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  background: var(--color-void);
+  color: var(--color-paper);
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  line-height: 1.7;
+  letter-spacing: 0.01em;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+::selection {
+  background: var(--color-vermillon);
+  color: var(--color-paper);
+}
+
+/* Le curseur natif ne disparaît que si l'encre le remplace vraiment */
+body[data-ink-cursor='on'],
+body[data-ink-cursor='on'] * {
+  cursor: none;
+}
+
+/* ============================================================
+   Accessibilité
+   ============================================================ */
+
+:focus-visible {
+  outline: 2px solid var(--color-vermillon-lit);
+  outline-offset: 3px;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.skip-link {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 200;
+  transform: translateY(-120%);
+  background: var(--color-vermillon);
+  color: var(--color-paper);
+  padding: 0.75rem 1.25rem;
+  font-size: 0.6875rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  transition: transform 0.2s var(--ease-ink);
+}
+.skip-link:focus {
+  transform: none;
+}
+
+/* ============================================================
+   Le voile de démarrage
+   Masqué avant l'hydratation si la session a déjà vu la séquence,
+   pour qu'aucun éclair noir ne réapparaisse au retour.
+   ============================================================ */
+
+html[data-booted='1'] #boot {
+  display: none;
+}
+
+/* ============================================================
+   Grain
+   Une seule tuile, tirée une fois, jamais réanimée par JS.
+   ============================================================ */
+
+.grain {
+  position: fixed;
+  inset: -50%;
+  z-index: 90;
+  pointer-events: none;
+  opacity: 0.05;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .grain {
+    animation: grain-drift 6s steps(6) infinite;
+  }
+}
+
+@keyframes grain-drift {
+  0% { transform: translate(0, 0); }
+  20% { transform: translate(-3%, 2%); }
+  40% { transform: translate(2%, -3%); }
+  60% { transform: translate(-2%, -2%); }
+  80% { transform: translate(3%, 1%); }
+  100% { transform: translate(0, 0); }
+}
+
+/* ============================================================
+   Diffusion d'encre
+   Le masque part d'un point et gonfle ; le filtre de turbulence
+   déchire son bord pendant la diffusion, puis on le retire pour
+   que le texte redevienne net.
+   ============================================================ */
+
+.ink-mask {
+  -webkit-mask-image: radial-gradient(
+    circle at var(--ink-x, 30%) var(--ink-y, 50%),
+    #000 38%,
+    rgba(0, 0, 0, 0.55) 58%,
+    transparent 72%
+  );
+  mask-image: radial-gradient(
+    circle at var(--ink-x, 30%) var(--ink-y, 50%),
+    #000 38%,
+    rgba(0, 0, 0, 0.55) 58%,
+    transparent 72%
+  );
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+}
+
+.ink-wet {
+  filter: url(#ink-bleed);
+}
+
+/* Sans support des masques, on retombe sur une opacité simple */
+@supports not (mask-image: radial-gradient(#000, transparent)) {
+  .ink-mask {
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+}
+
+/* ============================================================
+   Filets et graduations du HUD
+   ============================================================ */
+
+.rule-h {
+  height: 1px;
+  background: linear-gradient(
+    to right,
+    transparent,
+    var(--color-ash-2) 12%,
+    var(--color-ash-2) 88%,
+    transparent
+  );
+}
+
+.tick {
+  background-image: repeating-linear-gradient(
+    to bottom,
+    var(--color-ash-2) 0 1px,
+    transparent 1px 8px
+  );
+}
+
+/* ============================================================
+   Typographie éditoriale
+   ============================================================ */
+
+.display {
+  font-family: var(--font-display);
+  font-weight: 400;
+  line-height: 0.84;
+  letter-spacing: -0.03em;
+}
+
+.label {
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--color-ash);
+}
+
+/* Filet d'encre sous les liens, qui se remplit au survol */
+.ink-link {
+  position: relative;
+  display: inline-block;
+}
+.ink-link::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -0.08em;
+  height: 1px;
+  background: var(--color-vermillon);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.5s var(--ease-ink);
+}
+.ink-link:hover::after,
+.ink-link:focus-visible::after {
+  transform: none;
+}
+
+/* ============================================================
+   Mouvement réduit : la page se donne d'un coup, sans rien perdre
+   ============================================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+
+  .ink-mask {
+    -webkit-mask-image: none !important;
+    mask-image: none !important;
+    opacity: 1 !important;
+  }
+
+  .ink-wet {
+    filter: none !important;
+  }
+
+  body[data-ink-cursor='on'],
+  body[data-ink-cursor='on'] * {
+    cursor: auto;
+  }
+}

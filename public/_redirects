@@ -1,0 +1,3 @@
+# Netlify — indispensable avec react-router :
+# sans cette règle, ouvrir /projets/saas-linkedin directement renvoie une 404.
+/*  /index.html  200
